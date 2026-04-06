@@ -7,8 +7,8 @@ import (
 	"os"
 
 	"github.com/go-chi/chi"
+	"github.com/go-chi/cors"
 	"github.com/joho/godotenv"
-	// "github.com/go-chi/cors"
 )
 
 func main() {
@@ -18,10 +18,24 @@ func main() {
 	}
 	fmt.Println(os.Getenv("PORT"))
 	router := chi.NewRouter()
+	router.Use(cors.Handler(cors.Options{
+		AllowedOrigins: []string{"*"},
+		AllowedMethods: []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
+		AllowedHeaders: []string{"*"},
+		ExposedHeaders: []string{"*"},
+		MaxAge:         300,
+	}))
+
+	v1Router := chi.NewRouter()
+	v1Router.HandleFunc("/healthz", HandlerReadiness)
+
+	router.Mount("/v1", v1Router)
+
 	srv := &http.Server{
 		Handler: router,
 		Addr:    ":" + os.Getenv("PORT"),
 	}
+
 	log.Print("Starting server on port " + os.Getenv("PORT"))
 	err = srv.ListenAndServe()
 	if err != nil {
